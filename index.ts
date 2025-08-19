@@ -1,6 +1,7 @@
 #! /usr/bin/env bun
 
-import readline from "readline";
+import readline from "readline/promises";
+import { stdin as input, stdout as output } from "node:process";
 import OpenAI from "openai";
 import type { ResponseInput } from "openai/resources/responses/responses";
 import ora from "ora";
@@ -19,46 +20,32 @@ const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
 });
 
-// TODO: Move to readline/promises
-const rl = readline.createInterface({
-	input: process.stdin,
-	output: process.stdout,
-	prompt: "› ",
-});
+const rl = readline.createInterface({ input, output, prompt: "› " });
 
 rl.prompt();
 
-rl.on("line", async (line) => {
-	messages.push({
-		role: "user",
-		content: line,
-	});
+for await (const line of rl) {
+	if (line == null) break;
 
-	// Allow for saving conversation
+	messages.push({ role: "user", content: line });
+
+	// Allow for conversation saving (eventually)
 	let response = "";
 
 	const spinner = ora("Waiting for OpenAI...").start();
 
-	// TODO: Need to do some error catching for models that don't reason or support web search
+	// TODO: Need to do some error catching for models that don't support reasoning or web search.
 	const completion = await openai.responses.create({
 		model: "gpt-5-nano",
 		temperature: 1,
 		stream: true,
 		input: messages,
-		reasoning: {
-			effort: "low",
-			summary: "detailed",
-		},
+		reasoning: { effort: "low", summary: "detailed" },
 		tools: [{ type: "web_search_preview" }],
 	});
 
 	for await (const event of completion) {
 		switch (event.type) {
-			// case "response.created":
-			// 	spinner.text = "...";
-			// 	break;
-
-			// Not supported yet?
 			case "response.reasoning_text.delta":
 				spinner.text = "Reasoning in detail...";
 				break;
@@ -79,18 +66,17 @@ rl.on("line", async (line) => {
 				if (spinner.isSpinning) {
 					spinner.stop();
 				}
-
 				response += event.delta;
 				process.stdout.write(event.delta);
-
 				break;
 			}
 		}
 	}
 
-	// Get rid of silly end of line, and print another
+	// Get rid of silly end of line
 	console.log("\n");
 	rl.prompt();
-}).on("close", () => {
-	process.exit(0);
-});
+}
+
+rl.close();
+process.exit(0);
