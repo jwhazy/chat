@@ -9,3 +9,4 @@ A simple chat interface for the terminal. Uses GPT-5 and web search tools provid
 - [ ] Code highlighting
 - [ ] Toggle reasoning
 - [ ] Different models 
+- [ ] A more TUI like interface (eventually)
