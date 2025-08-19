@@ -1,7 +1,5 @@
 #! /usr/bin/env bun
 
-import readline from "readline/promises";
-import { stdin as input, stdout as output } from "node:process";
 import OpenAI from "openai";
 import type { ResponseInput } from "openai/resources/responses/responses";
 import ora from "ora";
@@ -20,11 +18,10 @@ const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
 });
 
-const rl = readline.createInterface({ input, output, prompt: "› " });
+const prompt = "› ";
+process.stdout.write(prompt);
 
-rl.prompt();
-
-for await (const line of rl) {
+for await (const line of console) {
 	if (line == null) break;
 
 	messages.push({ role: "user", content: line });
@@ -32,7 +29,10 @@ for await (const line of rl) {
 	// Allow for conversation saving (eventually)
 	let response = "";
 
-	const spinner = ora("Waiting for OpenAI...").start();
+	const spinner = ora({
+		text: "Waiting for OpenAI...",
+		discardStdin: false, // Need to find a better way to do this
+	}).start();
 
 	// TODO: Need to do some error catching for models that don't support reasoning or web search.
 	const completion = await openai.responses.create({
@@ -75,8 +75,7 @@ for await (const line of rl) {
 
 	// Get rid of silly end of line
 	console.log("\n");
-	rl.prompt();
+	process.stdout.write(prompt);
 }
 
-rl.close();
 process.exit(0);
