@@ -16,5 +16,9 @@
 	},
 	"bin": {
 		"chat": "./index.ts"
+	},
+	"scripts": {
+		"start": "bun run index.ts",
+		"build": "NODE_ENV=production bun build --target=bun index.ts --env 'PUBLIC_*' --compile --outfile dist/chat"
 	}
 }
