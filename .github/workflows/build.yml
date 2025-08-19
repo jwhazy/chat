@@ -51,18 +51,3 @@ jobs:
         with:
           name: chat-${{ matrix.name }}
           path: dist/${{ matrix.outfile }}
-
-  gather:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Download all per-target artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: dist
-
-      - name: Re-package and upload single artifact (all binaries)
-        uses: actions/upload-artifact@v4
-        with:
-          name: chat
-          path: dist
