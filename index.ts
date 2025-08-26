@@ -4,6 +4,10 @@ import OpenAI from "openai";
 import type { ResponseInput } from "openai/resources/responses/responses";
 import ora from "ora";
 
+if (!process.env.OPENAI_API_KEY) {
+	throw new Error("OPENAI_API_KEY is not set");
+}
+
 console.log();
 
 const messages: ResponseInput = [
