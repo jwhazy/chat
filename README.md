@@ -4,9 +4,9 @@ A _very_ simple chat interface for the terminal. Uses GPT-5 and web search tools
 
 ## To-do
 
-- [ ] Command line arguments
+- [x] Command line arguments
 - [ ] History
 - [ ] Code highlighting
-- [ ] Toggle reasoning options
-- [ ] Different models 
+- [x] Toggle reasoning options
+- [x] Different models 
 - [ ] A more TUI like interface (eventually)
