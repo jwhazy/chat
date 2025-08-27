@@ -3,12 +3,56 @@
 import OpenAI from "openai";
 import type { ResponseInput } from "openai/resources/responses/responses";
 import ora from "ora";
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers";
 
 if (!process.env.OPENAI_API_KEY) {
 	throw new Error("OPENAI_API_KEY is not set");
 }
 
-console.log();
+const argv = await yargs(hideBin(process.argv))
+	.option("input", {
+		alias: "i",
+		type: "string",
+		describe: "Initial message to send",
+	})
+	.option("disable-chat", {
+		type: "boolean",
+		default: false,
+		describe: "Disable chat functionality, will not offer a prompt.",
+	})
+	.option("model", {
+		alias: "m",
+		type: "string",
+		default: "gpt-5-nano",
+		describe: "OpenAI model to use",
+	})
+	.option("temperature", {
+		alias: "t",
+		type: "number",
+		default: 1,
+		describe: "Temperature for response generation",
+	})
+	.option("reasoning-effort", {
+		type: "string",
+		default: "low",
+		choices: ["low", "medium", "high"],
+		describe: "Reasoning effort level",
+	})
+	.option("reasoning-summary", {
+		type: "string",
+		default: "detailed",
+		choices: ["detailed", "auto", "concise"],
+		describe: "Reasoning summary type",
+	})
+	.option("disable-web-search", {
+		type: "boolean",
+		default: false,
+		describe: "Disable web search functionality",
+	})
+	.help()
+	.version()
+	.parse();
 
 const messages: ResponseInput = [
 	{
@@ -22,8 +66,8 @@ const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
 });
 
-const prompt = "› ";
-process.stdout.write(prompt);
+// TODO: Use chalk or custom utils to change this.
+const prompt = "\x1b[38;2;204;204;204m›\x1b[0m ";
 
 for await (const line of console) {
 	if (line == null) break;
@@ -39,13 +83,22 @@ for await (const line of console) {
 	}).start();
 
 	// TODO: Need to do some error catching for models that don't support reasoning or web search.
+	const tools = argv.disableWebSearch
+		? []
+		: [{ type: "web_search_preview" as const }];
+
 	const completion = await openai.responses.create({
-		model: "gpt-5-nano",
-		temperature: 1,
+		model: argv.model,
+		temperature: argv.temperature,
 		stream: true,
 		input: messages,
-		reasoning: { effort: "low", summary: "detailed" },
-		tools: [{ type: "web_search_preview" }],
+		reasoning: {
+			effort: argv.reasoningEffort as "low" | "medium" | "high",
+			summary: argv.reasoningSummary as "detailed" | "auto" | "concise",
+		},
+		tools: !argv.disableWebSearch
+			? [{ type: "web_search_preview" as const }]
+			: [],
 	});
 
 	for await (const event of completion) {
@@ -77,9 +130,25 @@ for await (const line of console) {
 		}
 	}
 
-	// Get rid of silly end of line
-	console.log("\n");
+	process.stdout.write("\n");
+
+	if (!argv.disableChat) {
+		console.log();
+		process.stdout.write(prompt);
+	}
+}
+
+// If input is provided, process it first
+if (argv.input && argv.input.trim()) {
+	await sendMessage(argv.input);
+} else {
 	process.stdout.write(prompt);
+}
+
+if (!argv.disableChat) {
+	for await (const line of console) {
+		await sendMessage(line);
+	}
 }
 
 process.exit(0);
