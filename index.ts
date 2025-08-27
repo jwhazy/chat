@@ -69,10 +69,8 @@ const openai = new OpenAI({
 // TODO: Use chalk or custom utils to change this.
 const prompt = "\x1b[38;2;204;204;204m›\x1b[0m ";
 
-for await (const line of console) {
-	if (line == null) break;
-
-	messages.push({ role: "user", content: line });
+async function sendMessage(message: string): Promise<void> {
+	messages.push({ role: "user", content: message });
 
 	// Allow for conversation saving (eventually)
 	let response = "";
@@ -83,10 +81,6 @@ for await (const line of console) {
 	}).start();
 
 	// TODO: Need to do some error catching for models that don't support reasoning or web search.
-	const tools = argv.disableWebSearch
-		? []
-		: [{ type: "web_search_preview" as const }];
-
 	const completion = await openai.responses.create({
 		model: argv.model,
 		temperature: argv.temperature,
@@ -147,6 +141,7 @@ if (argv.input && argv.input.trim()) {
 
 if (!argv.disableChat) {
 	for await (const line of console) {
+		if (line == null) break;
 		await sendMessage(line);
 	}
 }
